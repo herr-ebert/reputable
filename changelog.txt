@@ -1,3 +1,9 @@
+12 May 22
+- Build 1.30 (BCC)
+	* Add Netherwing Quests
+	* Add Shattered Sun Offensive Quests
+	* Add Magisters' Terrace
+
 21 Sep 21
 - Build 1.29 (BCC)
 	* Temporarily disabled feature: linking of item to show it's rewards - until I find a better way

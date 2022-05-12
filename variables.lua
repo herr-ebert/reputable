@@ -307,7 +307,7 @@ Reputable.instance = {
 	[554] = { mapID = 3849, zoneMID = 3842, iz = 6, heroic = true, level = { 67, 69, 72 }, rep = { normal = { 			  rep = 1620 }, 																	heroic = { rep = 2100 } }, icon = "Achievement_Boss_PathaleonTheCalculator" },
 	[553] = { mapID = 3847, zoneMID = 3842, iz = 6, heroic = true, level = { 67, 70, 72 }, rep = { normal = { 			  rep = 2200 }, 																	heroic = { rep = 3245 } }, icon = "Achievement_Boss_WarpSplinter" },
 	[552] = { mapID = 3848, zoneMID = 3842, iz = 6, heroic = true, level = { 68, 70, 72 }, rep = { normal = { 			  rep = 1800 }, 																	heroic = { rep = 2600 } }, icon = "Achievement_Boss_Harbinger_Skyriss", accessKey = 31084 },
-	[585] = { mapID = 4131, zoneMID = 4080, iz = 7, heroic = true, level = { 67, 70, 72 }, rep = { normal = { max = 8999, rep = 1200 }, 																	heroic = { rep = 2400 } }, icon = "Achievement_Boss_Warlord_Kalithresh" },
+	[585] = { mapID = 4131, zoneMID = 4080, iz = 7, heroic = true, level = { 67, 70, 72 }, rep = { normal = { max = 8999, rep = 1200 }, 																	heroic = { rep = 2400 } }, icon = "Achievement_Boss_Kael'thasSunstrider" },
 	[230] = { mapID = 1584,	zoneMID = 25,	level = { 48, 52, 60 } },
 	[229] = { mapID = 1583,	zoneMID = 25,	level = { 48, 55, 60 } },
 	[249] = { mapID = 2159, zoneMID = 15,	level = { 52, 60, 60 }, accessKey = 16309 },
