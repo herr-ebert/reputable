@@ -1,0 +1,470 @@
+local addonName, addon = ...
+Reputable = CreateFrame("Frame"), {};
+
+local playerName = UnitName("player")
+local server = GetRealmName()
+local profileKey = playerName .. "-" .. server
+local gender = UnitSex("player");
+local level = UnitLevel("player")
+local _,playerClass = UnitClass("player")
+local playerFaction = UnitFactionGroup("player")
+
+local foundFactions = 0
+
+
+Reputable:SetScript("OnEvent", function (self, event, ...)
+	if event == "PLAYER_LOGIN" then
+		Reputable:initiate()
+	elseif event == "GARRISON_MISSION_LIST_UPDATE" then
+		print("Bar")
+		print(...)
+		print(BFAMissions)
+	elseif event == "UPDATE_FACTION" then
+	-- This event triggers often. Just check if there's a new faction.
+		local numFactions = GetNumFactions()
+		for factionIndex = 1, numFactions do
+			local name, description, standingId, bottomValue, topValue, earnedValue, atWarWith, canToggleAtWar,
+				isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex)
+			if isHeader and isCollapsed then
+				ExpandFactionHeader(factionIndex)
+				numFactions = GetNumFactions()
+			end
+		end
+	-- If there's a new faction, update data
+		if foundFactions ~= 0 and foundFactions ~= numFactions then
+			Reputable:getAllFactions()
+		end
+	end
+end)
+
+function Reputable:initiate()
+	local defaultData = {
+		profileKeys = {},
+		factionNames = {},
+		paragonFactions = {},
+	}
+	if Reputable_Data == nil then
+		Reputable_Data = {
+			global = defaultData
+		}
+	end
+	for option, default in pairs( defaultData ) do
+		if Reputable_Data.global[option] == nil then Reputable_Data.global[option] = default end
+	end
+	if Reputable_Data.global.profileKeys[profileKey] == nil then Reputable_Data.global.profileKeys[profileKey] = true end
+	if Reputable_Data[profileKey] == nil then Reputable_Data[profileKey] = {} end
+	Reputable_Data[profileKey].profile = {
+											name	= playerName,
+											server	= server,
+											gender	= gender,
+											level	= level,
+											class	= playerClass,
+											faction	= playerFaction,
+										}
+	
+	--C_Timer.After(5, function() Reputable:UpdateData() end ) -- Delays data grab on login (in seconds). Unnecessary?
+	Reputable:getAllFactions()
+end
+
+
+SLASH_REPUTABLE1= "/reputable";
+function SlashCmdList.REPUTABLE(msg)
+	--Reputable:UpdateEvents()
+	--[[
+	local itemLink = "|cffe6cc80|Hitem:128827::141273:151296:151294::::110:258:16777472:9:4:740:1490:1489:1493:250:1:3:1824:1507:3337:3:3573:1502:3528:3:3573:1517:3337|h[Xal'atath, Blade of the Black Empire]|h|r"
+	local gem1name, gem1Link = GetItemGem(itemLink, 1)
+	local gem2name, gem2Link = GetItemGem(itemLink, 2)
+	local gem3name, gem3Link = GetItemGem(itemLink, 3)
+	if gem1name then
+	  DEFAULT_CHAT_FRAME:AddMessage("Gem 1: "..gem1name..", Link: "..gem1Link)
+	end
+	if gem2name then
+	  DEFAULT_CHAT_FRAME:AddMessage("Gem 2: "..gem2name..", Link: "..gem2Link)
+	end
+	if gem3name then
+	  DEFAULT_CHAT_FRAME:AddMessage("Gem 3: "..gem3name..", Link: "..gem3Link)
+	end
+	--]]
+	
+	--local spellName, spellID = GetItemSpell(117492)
+	--print( spellName, spellID )
+	
+
+end
+
+
+local function getRepString( repValue, profile )
+	local repString = { str = "|cffffd100-" }
+	local standingID
+	local standingLabel
+	local dispValue = repValue
+	local progress
+	if repValue then
+		if repValue < -6000 then
+			standingID = 1
+		elseif repValue < -3000 then
+			standingID = 2
+		elseif repValue < 0 then
+			standingID = 3
+		elseif repValue < 3000 then
+			standingID = 4
+		elseif repValue < 9000 then
+			standingID = 5
+			dispValue = repValue - 3000
+		elseif repValue < 21000 then
+			standingID = 6
+			dispValue = repValue - 9000
+		elseif repValue < 42000 then
+			standingID = 7
+			dispValue = repValue - 21000
+		elseif repValue == 42000 then
+			standingID = 8
+			progress = ""
+		else
+			standingID = 9
+			dispValue = ( repValue - 42000 ) % 10000
+			standingLabel = Reputable.factionStandingColours[9] .. "Paragon"
+		end
+		if standingID < 9 then
+			standingLabel = Reputable.factionStandingColours[standingID] .. GetText("FACTION_STANDING_LABEL"..standingID, profile.gender)
+		end
+		if standingID ~= 8 then
+			progress = " " .. math.floor( dispValue/100 ) / 10 .. "k /" .. Reputable.factionStandingMax[standingID]/1000 .. "k"
+		end
+			
+	--	print(standingID,Reputable.factionStandingColours[standingID] ,GetText("FACTION_STANDING_LABEL"..standingID, profile.gender))
+		repString = {
+			str = standingLabel .. progress,
+			l = standingLabel,
+			n = progress,
+			s = standingID,			
+		}
+	end
+	--local factionStandingtext = Reputable.factionStandingColours[standingNew.standingID] .. GetText("FACTION_STANDING_LABEL"..standingNew.standingID, gender);
+	
+	return repString
+end
+
+local function addRepToToolTip( self, factionID, itemMinLevel )
+	if itemMinLevel == nil then itemMinLevel = 0 end
+	--if WorldQuestTipsData.global.options.showRepOnItems then
+	--local factionName,_,factionStanding,barMin,barMax,value = GetFactionInfoByID( factionID );
+	--barMax = (barMax - barMin)/1000;
+	--local barValue = math.floor( (value - barMin)/100 ) / 10
+	--local factionStandingtext = GetText("FACTION_STANDING_LABEL"..factionStanding, gender);
+	--local colour = "|cff808080"
+	--if factionStanding < 8 then
+	--	factionStandingtext = factionStandingtext.." "..barValue.."k /"..barMax.."k"
+	--	colour = "|cffffd100"
+	--end
+--	print( Reputable_Data[profileKey].factions[factionID] )
+	local factionStandingtext = "|cffffd100Faction not encountered yet"
+	if Reputable_Data[profileKey].factions[factionID] then
+		local reputationString = getRepString( Reputable_Data[profileKey].factions[factionID], Reputable_Data[profileKey].profile )
+--	if not ( factionStanding == 8 and not WorldQuestTipsData.global.options.showExalted ) then
+		factionStandingtext = reputationString.str
+	end
+	if factionStandingtext then _G[ self:GetName().."TextLeft2" ]:SetText( factionStandingtext.."\124r\n".._G[ self:GetName().."TextLeft2" ]:GetText().." ") end
+--	end
+	
+--	if WorldQuestTipsData.global.options.showAltRepOnItems then
+	for i = 1, self:NumLines() do
+	--	if string.find(_G[ self:GetName().."TextLeft"..i ]:GetText(),ITEM_BNETACCOUNTBOUND) and IsAltKeyDown() then
+		if string.find(_G[ self:GetName().."TextLeft"..i ]:GetText(),ITEM_BNETACCOUNTBOUND) or string.find(_G[ self:GetName().."TextLeft"..i ]:GetText(),ITEM_BIND_TO_BNETACCOUNT) then
+	--		for k,v in pairs( WorldQuestTipsData ) do
+			for key,show in pairs( Reputable_Data.global.profileKeys ) do
+	--			if k ~= "global" and k ~= "version" and k ~= profileKey then
+				if key ~= profileKey then
+		--			print( k,v )
+					local k  = Reputable_Data[key]
+					if show then 
+				--		print( key, k.factions[factionID] )
+					end
+					if 	k.profile then
+						local reputationString = getRepString( k.factions[factionID], k.profile )
+				--	if v.info and v.info.level > 100 then
+						local color = RAID_CLASS_COLORS[k.profile.class]
+						local level = ""
+						if k.profile.level < itemMinLevel then level = "|cffffffff ("..k.profile.level..")" end
+				--		if not ( string.find( v.reps[ factionID ], "|cff808080" ) and not WorldQuestTipsData.global.options.showExalted ) then
+				--			self:AddDoubleLine( k.profile.name..level, k.factions[factionID], color.r, color.g, color.b )
+							self:AddDoubleLine( k.profile.name..level, reputationString.str, color.r, color.g, color.b )
+				--		end
+					end
+				end
+			end
+		end
+	end
+--	end
+	self:Show()
+	--end
+end
+hooksecurefunc(ItemRefTooltip, "SetHyperlink", function(self, link )
+	local type, id = string.match(link,"^(%a+):(%d+)")
+	if type == "item" and Reputable.repitems[ id ] then
+		local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon,
+		itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo( id )
+		addRepToToolTip( self, Reputable.repitems[ id ], itemMinLevel )
+	end
+end)
+
+GameTooltip:HookScript("OnTooltipSetItem", function(self)
+	--print(...)
+	local link = select(2, self:GetItem())
+	if link then
+		local id = string.match(link, "item:(%d*)")
+		if id and Reputable.repitems[ id ] then
+			local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon,
+			itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo( id )
+			addRepToToolTip( self, Reputable.repitems[ id ], itemMinLevel )
+		end
+	end
+end)
+
+--GarrisonMissionFrame:HookScript("OnShow", function(self, button, down)
+--hooksecurefunc( GameTooltip, "SetCurrencyToken", function(self)
+--hooksecurefunc( GameTooltip, "GameTooltip_AddQuestRewardsToTooltip", function(self)
+--GarrisonMissionListButtonRewardTemplate:HookScript("OnEnter", function(self)
+--GarrisonMissionFrame:HookScript("OnOpen", function(self)
+--BFAMissionFrame:HookScript("OnLoadMainFrame", function(self)
+--GameTooltip:HookScript("OnLoad", function(self)
+--function EmbeddedItemTooltip_SetSpellByQuestReward(self, rewardIndex, questID)
+--GameTooltip:HookScript("SetCurrencyToken", function(self, rewardIndex, questID)
+GameTooltip:HookScript("OnShow", function(self, rewardIndex, questID)
+	--print("Foo")
+	local thisowner = self:GetOwner()
+	--print(thisowner)
+	for k,v in pairs( thisowner ) do
+		--print(k,v)
+		if k == "currencyID" then
+			local factionID = Reputable.repCurrency[v]
+			if factionID then
+		--	print(v)
+				local factionStandingtext = "|cffffd100Faction not encountered yet"
+				if Reputable_Data[profileKey].factions[factionID] then
+					local reputationString = getRepString( Reputable_Data[profileKey].factions[factionID], Reputable_Data[profileKey].profile )
+					factionStandingtext = reputationString.str
+				end
+				GameTooltipTextLeft2:SetText( factionStandingtext.."\124r\n"..GameTooltipTextLeft2:GetText().." ")
+			end
+			GameTooltip:AddDoubleLine("currencyID",v)
+			GameTooltip:Show()
+		end
+	end
+end)
+
+--[[ Adds to Emissary tooltips --]]			-- 2165 -> 48639
+local function ShowBountyTooltip(self, bountyIndex)
+	local bountyData = self.bounties[bountyIndex];
+	local factionID = bountyData.factionID
+	local questID = bountyData.questID
+	
+	-- Sometimes factionID is returning 0
+	if		questID == 48639 then factionID = 2165		-- Army of the light
+	elseif	questID == 48641 then factionID = 2045 end	-- Armies of Legionfall
+	if factionID ~= 0 then
+		local factionStandingtext = "|cffffd100Faction not encountered yet"
+		if Reputable_Data[profileKey].factions[factionID] then
+			local reputationString = getRepString( Reputable_Data[profileKey].factions[factionID], Reputable_Data[profileKey].profile )
+			factionStandingtext = reputationString.str
+		end
+		GameTooltipTextLeft2:SetText( factionStandingtext.."\124r\n"..GameTooltipTextLeft2:GetText().." ")
+	end
+	
+	
+	GameTooltip:AddLine("Reputable Debugging Info:")
+	GameTooltip:AddDoubleLine("factionID:",factionID)
+	GameTooltip:AddDoubleLine("questID:",questID)
+	
+	GameTooltip:Show()
+	
+	--for k, v in pairs(bountyData) do
+	--	print(k,v)
+	--end
+	
+end
+
+for i, frame in ipairs(WorldMapFrame.overlayFrames) do
+    if frame.ShowBountyTooltip then
+        hooksecurefunc(frame, "ShowBountyTooltip", ShowBountyTooltip)
+    end
+end
+hooksecurefunc(WorldMapBountyBoardMixin, "ShowBountyTooltip", ShowBountyTooltip)
+
+--[[ Adds to worldquest tooltips --]]
+-- hooking to function in: /Interface/FrameXML/WorldMapFrame.lua
+hooksecurefunc ("TaskPOI_OnEnter", function (self)
+	--for k,v in pairs( self ) do print( k, v) end
+	if ( HaveQuestData(self.questID) ) then
+		local title, factionID, capped = C_TaskQuest.GetQuestInfoByQuestID(self.questID);
+		local factionName
+		local secondaryFaction = ""
+		if factionID then factionName = GetFactionInfoByID(factionID) end
+		local questZoneId = C_TaskQuest.GetQuestZoneID( self.questID )
+		local tagID, tagName, worldQuestType, rarity, isElite, tradeskillLineIndex = GetQuestTagInfo(self.questID);
+	--	if isElite then isElite = "true" else isElite = "false" end
+	--	print( questZoneId )
+	--	Reputable.factionMap[ questZoneId ]
+		if factionID ~= nil and Reputable.factionMap[ questZoneId ] and factionID ~= Reputable.factionMap[ questZoneId ] then
+		--	print( Reputable.factionMap[ questZoneId ] )
+			local factionID2
+			local factionName2
+			local factionStandingtext2 = "|cffffd100Faction not encountered yet|r"
+			local reputationString2
+			if Reputable.factionMap[ questZoneId ] == "special_argus" then
+				--print( Reputable.factionMap[ questZoneId ] )
+				if isElite and rarity > 1 then
+					--print( "I'm special")
+					-- 2165
+					-- 2170
+					if factionID == 2165 then factionID2 = 2170 else factionID2 = 2165 end
+					factionName2 = GetFactionInfoByID(factionID2)
+					reputationString2 = getRepString( Reputable_Data[profileKey].factions[factionID2], Reputable_Data[profileKey].profile )
+				end
+			else
+				factionID2 = Reputable.factionMap[ questZoneId ]
+				factionName2 = GetFactionInfoByID(factionID2)
+				reputationString2 = getRepString( Reputable_Data[profileKey].factions[factionID2], Reputable_Data[profileKey].profile )
+			end
+			if Reputable_Data[profileKey].factions[factionID2] then
+				factionStandingtext2 = reputationString2.str
+				secondaryFaction = "\n" .. Reputable.factionStandingColours[reputationString2.s] .. factionName2 .. " (" .. factionStandingtext2 .. ")"
+			end
+		end
+		local factionStandingtext = "|cffffd100Faction not encountered yet|r"
+		local reputationString = getRepString( Reputable_Data[profileKey].factions[factionID], Reputable_Data[profileKey].profile )
+		if Reputable_Data[profileKey].factions[factionID] then
+			factionStandingtext = reputationString.str
+		--	for i = 1, GameTooltip:NumLines() do
+		--		if factionName and string.find(_G[ "GameTooltipTextLeft"..i ]:GetText(),factionName) then
+				if factionName and string.find(GameTooltipTextLeft2:GetText(),factionName) then
+		--			_G[ "GameTooltipTextLeft"..i ]:SetText( Reputable.factionStandingColours[reputationString.s] .. factionName .. " (" .. factionStandingtext .. ")" )
+					GameTooltipTextLeft2:SetText( Reputable.factionStandingColours[reputationString.s] .. factionName .. " (" .. factionStandingtext .. ")" .. secondaryFaction )
+				end
+		--	end
+		end
+		GameTooltip:AddLine("Reputable Debugging Info:")
+		GameTooltip:AddDoubleLine("questZoneId:",questZoneId)
+		GameTooltip:AddDoubleLine("factionID:",factionID)
+		GameTooltip:AddDoubleLine("questID",self.questID)
+		GameTooltip:AddDoubleLine("rarity",rarity)
+		GameTooltip:AddDoubleLine("isElite",tostring(isElite))
+		GameTooltip:Show()
+	end
+end)
+
+local ps = string.find(FACTION_STANDING_INCREASED,"%%s")
+local pd = string.find(FACTION_STANDING_INCREASED,"%%d")
+local s2 = string.sub( FACTION_STANDING_INCREASED,ps+2, pd-1)
+local Reputable_msg_filter = function(frame, event, message, ...)
+	local pf = string.find(message,s2)
+	local fn = string.sub( message,ps, pf-1)
+	--local changeTextToNum = tonumber(string.match (message, "%d+"))
+	local factionID = Reputable_Data.global.factionNames[ fn ] or Reputable:getAllFactions( true )
+	if factionID then
+		Reputable:createRepString( frame, fn, factionID )
+	else
+		factionID = Reputable_Data.global.factionNames[ fn ] or Reputable:getAllFactions( true )
+		print("No factionID found, after wait, factionID is: " .. tostring(factionID))
+		C_Timer.After(1, function() Reputable:createRepString( frame, fn, factionID ) end )
+	end
+	return false, message, ...
+	
+	--DEFAULT_CHAT_FRAME:AddMessage(ERROR_SLASH_COMMENTATOROVERRIDE_EXAMPLE, YELLOW_FONT_COLOR.r, YELLOW_FONT_COLOR.g, YELLOW_FONT_COLOR.b);
+end
+ChatFrame_AddMessageEventFilter("CHAT_MSG_COMBAT_FACTION_CHANGE", Reputable_msg_filter)
+
+function Reputable:createRepString( frame, fn, factionID )
+	if factionID then
+		local newmessage
+		local positive = "+"
+		local standingOld = Reputable_Data[profileKey].factions[ factionID ] or 0
+		local standingNew = Reputable:getFaction( factionID )
+		local factionStandingtext = Reputable.factionStandingColours[standingNew.standingID] .. GetText("FACTION_STANDING_LABEL"..standingNew.standingID, gender);
+		local change = standingNew.barValue - standingOld
+		if change < 0 then positive = "" end
+		local rewardmsg = ""
+		if standingNew.paragon and standingNew.barValue >= 42000 then
+			factionStandingtext = Reputable.factionStandingColours[9] .. "Paragon"
+			standingNew.barValue = (standingNew.barValue - 42000) % 10000
+			-- paragon reward not returning true on first instance of rep reaching target - So checking if the change is greater than the current value and paragon rep has been reached once. ie 52000
+			if standingNew.reward or ( Reputable_Data[profileKey].factions[ factionID ] >= 52000 and change > standingNew.barValue - standingNew.barMin ) then rewardmsg =" Reward ready" end
+		end
+		newmessage = "Reputable: " .. fn .. " " .. positive .. change .. " ("..factionStandingtext .. " " .. standingNew.barValue - standingNew.barMin .. " /" .. standingNew.barMax - standingNew.barMin .. "|r)" .. rewardmsg
+		-- Got font colour from:
+		--		local rgb = ChatTypeInfo["FACTION_STANDING_INCREASED"]
+		--		print( rgb.r, rgb.g, rgb.b )
+	--else
+		--if changeTextToNum < 0 then positive = "" end
+	--	newmessage = "Reputable: " .. fn .. " " .. positive .. changeTextToNum
+	--	end
+		getglobal(frame:GetName()):AddMessage(newmessage,0.5,0.5,1)	
+	end
+
+end
+
+--QUEST_WATCH_QUEST_READY = "Ready for turn-in";
+--READY = "Ready";
+--REWARD = "Reward";
+
+function Reputable:getFaction( factionID )
+	if factionID == nil then return false
+	else
+		name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader,
+		isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionID)
+		local reward = false
+		local paragon = C_Reputation.IsFactionParagon(factionID)
+		Reputable_Data.global.paragonFactions[ factionID ] = true
+		if standingID == 8 and paragon then
+			barValue,_,_,reward = C_Reputation.GetFactionParagonInfo(factionID)
+			barValue = barValue + 42000
+			barMin = 0
+			barMax = 10000
+		end
+		Reputable_Data[profileKey].factions[ factionID ] = barValue
+		local thisRep = {
+			standingID = standingID,
+			barMin = barMin,
+			barMax = barMax,
+			barValue = barValue,
+			paragon = paragon,
+			reward = reward,
+		}
+		return thisRep
+	end
+end
+
+function Reputable:getAllFactions( findNew )
+	local newFaction
+	if Reputable_Data[profileKey].factions == nil then Reputable_Data[profileKey].factions = {} end
+	
+	local numFactions = GetNumFactions()
+	for factionIndex = 1, numFactions do
+		local name, description, standingId, bottomValue, topValue, earnedValue, atWarWith, canToggleAtWar,
+			isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfo(factionIndex)
+		if isHeader and isCollapsed then
+			ExpandFactionHeader(factionIndex)
+			numFactions = GetNumFactions()
+		end
+			
+		if hasRep or not isHeader then
+			local paragon = C_Reputation.IsFactionParagon(factionID)
+			if paragon then
+				local barValue,_,_,reward = C_Reputation.GetFactionParagonInfo(factionID)
+				earnedValue = barValue + earnedValue
+			end
+			if Reputable_Data[profileKey].factions[ factionID ] == nil then newFaction = factionID end
+			Reputable_Data.global.factionNames[ name ] = factionID
+			Reputable_Data.global.paragonFactions[ factionID ] = true
+			if findNew then earnedValue = bottomValue end
+			Reputable_Data[profileKey].factions[ factionID ] = earnedValue
+		end
+		if findNew then return newFaction end
+	end
+	foundFactions = numFactions
+end
+
+-- Register Initial Events
+Reputable:RegisterEvent("PLAYER_LOGIN")
+--Reputable:RegisterEvent("UPDATE_FACTION")
+--Reputable:RegisterEvent("GARRISON_MISSION_LIST_UPDATE")
