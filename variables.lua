@@ -289,6 +289,7 @@ Reputable.instanceZones = {
 	{ name = "Auchindoun",				abv = "auch", cat = "dungeons", dungeons = { 558, 556, 555 }, heroicKey = 30633, faction = 1011 },
 	{ name = "Caverns of Time",			abv = "cot",  cat = "dungeons", dungeons = { 560, 269 }, 	  heroicKey = 30635, faction = 989 },
 	{ name = "Tempest Keep",			abv = "tk",   cat = "dungeons", dungeons = { 554, 553, 552 }, heroicKey = 30634, faction = 935 },
+	{ name = "Magisters Terrace",		abv = "tdm",  cat = "dungeons", dungeons = { 585 }, faction = 1077 },
 }
 Reputable.instance = {
 	[543] = { mapID = 3562,	zoneMID = 3535,	iz = 1, heroic = true, level = { 58, 60, 62 }, rep = { normal = { max = 8999, rep =  633 }, 																	heroic = { rep = 2500 } }, icon = "Achievement_Boss_OmarTheUnscarred_01" },
@@ -306,6 +307,7 @@ Reputable.instance = {
 	[554] = { mapID = 3849, zoneMID = 3842, iz = 6, heroic = true, level = { 67, 69, 72 }, rep = { normal = { 			  rep = 1620 }, 																	heroic = { rep = 2100 } }, icon = "Achievement_Boss_PathaleonTheCalculator" },
 	[553] = { mapID = 3847, zoneMID = 3842, iz = 6, heroic = true, level = { 67, 70, 72 }, rep = { normal = { 			  rep = 2200 }, 																	heroic = { rep = 3245 } }, icon = "Achievement_Boss_WarpSplinter" },
 	[552] = { mapID = 3848, zoneMID = 3842, iz = 6, heroic = true, level = { 68, 70, 72 }, rep = { normal = { 			  rep = 1800 }, 																	heroic = { rep = 2600 } }, icon = "Achievement_Boss_Harbinger_Skyriss", accessKey = 31084 },
+	[585] = { mapID = 4131, zoneMID = 4080, iz = 7, heroic = true, level = { 67, 70, 72 }, rep = { normal = { max = 8999, rep = 1200 }, 																	heroic = { rep = 2400 } }, icon = "Achievement_Boss_Warlord_Kalithresh" },
 	[230] = { mapID = 1584,	zoneMID = 25,	level = { 48, 52, 60 } },
 	[229] = { mapID = 1583,	zoneMID = 25,	level = { 48, 55, 60 } },
 	[249] = { mapID = 2159, zoneMID = 15,	level = { 52, 60, 60 }, accessKey = 16309 },
@@ -314,11 +316,9 @@ Reputable.instance = {
 	[544] = { mapID = 3836, zoneMID = 3535, raid = true, level = { 70, 70, 70 } }, -- mag
 	[565] = { mapID = 3923, zoneMID = 3522, raid = true, level = { 70, 70, 70 } }, -- gruul
 	[548] = { name = DUNGEON_FLOOR_COILFANGRESERVOIR1, zoneMID = 3905, raid = true, level = { 70, 70, 70 } }, -- ssc
---[[
-	[564] = { mapID = , zoneMID =  }, -- bt
-	[534] = { mapID = , zoneMID =  }, -- mt hyjal
-	[580] = { mapID = , zoneMID =  }, -- sunwell
---]]
+	[564] = { mapID = 3959, zoneMID = 3520, raid = true, level = { 70, 70, 70 } }, -- bt
+	[534] = { mapID = 3606, zoneMID = 440, raid = true, level = { 70, 70, 70 } }, -- mt hyjal
+	[580] = { mapID = 4075, zoneMID = 4080, raid = true, level = { 70, 70, 70 } }, -- sunwell
 }
 
 Reputable.factionInfo = {
@@ -339,7 +339,17 @@ Reputable.factionInfo = {
 	[ 1038 ] = { name = "Ogri'la", rquests={11027,11080,11023,11066,11051} },
 	[ 1015 ] = { name = "Netherwing", rquests={11015,11018,11017,11016,11020,11035,11050,11076,11077,11055,11086,11101,11097}  },
 	[ 1031 ] = { name = "Sha'tari Skyguard", rquests={11006,11074,11085,11008,11066,11023} },
-	[ 1077 ] = { name = "Shattered Sun Offensive" },
+	[ 1077 ] = { name = "Shattered Sun Offensive", iz = 7 , rquests={
+	11880,11875,11516,11515,11877, -- Permanent
+	
+	-- 11524,11496, -- P1
+	11523,11525,11532,11538, -- P2
+	-- 11523,11525,11533,11536,11537,11544,11542 --P3
+	-- 11523,11525,11533,11536,11537,11544, --P4
+	
+	11513, -- Portal Closed
+	--11547,11514, -- Portal Open
+	} },
 	--[ 69 ] = { rquests={ 7801 }, Horde = false},
 		{ faction = 529	},	-- Arengt Dawn
 --	[ 87	] = { name = "Bloodsail Buccaneers" },
@@ -441,6 +451,8 @@ Reputable.extraQuestInfo = {
 	[ 10983 ] = { breadcrumb = {10984}},
 	[ 10588 ] = { requires = {10523,10541,10579}},
 	[  9067 ] = { breadcrumb = {9395}},
+	[ 11488 ] = { breadcrumb = {11481}},
+	[ 11488 ] = { breadcrumb = {11482}},
 	
 	[ 10732 ] = { breadcrumb = {							10731,10735,10740,10727,	10730,10734,10739,10726,	10729,10733,10738,10725	}},
 	[ 10731 ] = { breadcrumb = {10732,10736,10741,10728,								10730,10734,10739,10726,	10729,10733,10738,10725	}},
@@ -520,6 +532,8 @@ UNLOCK.." "..REPUTATION,
 "Race",
 {11063,11064,11067,11068,11069,11070,11071},
 },
+	[ 1077 ] = {"Magisters' Terrace",{11481,11488,11490,11492},"Isle of Quel'Danas",{11526,11550,11517}},
+
 --{11102},-- druid version of "Bombing run" -- need to impliment
 
 --	[  529 ] = {
