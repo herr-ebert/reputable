@@ -132,6 +132,7 @@ Reputable.guiTabs = {
 	{ faction =  932 },
 	{ faction = 1031 },
 	{ faction = 1038 },
+	{ faction = 1015 },
 	{ instance = 532 },
 	{ instance = "Nightbane" },
 	{ instance = 555 },
